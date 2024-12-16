@@ -8,19 +8,81 @@ class GoalService {
       String userId,
       String goalType,
       double startWeight,
-      double targetWeight,
+      double targetWeightInput,
       String dietType,
-      DateTime startDate,
-      ) async {
+      DateTime startDate, {
+        int? customCalorieLimit, // Optional für Benutzerdefinierte Diät
+        Map<String, int>? customMacros, // Optional für Benutzerdefinierte Diät
+      }) async {
     final goalsCollection = _firestore.collection('users').doc(userId).collection('goals');
 
+    // Zielgewicht berechnen: Wenn "Gewicht halten", dann startWeight = targetWeight
+    final targetWeight = goalType == 'Gewicht halten' ? startWeight : targetWeightInput;
+
+    // Kalorien- und Makroberechnung
+    int calories;
+    Map<String, int> macros;
+
+    if (dietType == 'Benutzerdefiniert') {
+      // Benutzerdefinierte Diät: Kalorienlimit und Makronährstoffe übernehmen
+      if (customCalorieLimit == null || customMacros == null) {
+        throw ArgumentError('Für Benutzerdefinierte Diät sind Kalorienlimit und Makronährstoffe erforderlich.');
+      }
+
+      // Makronährstoffverteilung prüfen
+      final totalPercentage = customMacros.values.reduce((a, b) => a + b);
+      if (totalPercentage != 100) {
+        throw ArgumentError('Die Makronährstoffverteilung muss insgesamt 100% ergeben.');
+      }
+
+      calories = customCalorieLimit;
+      macros = customMacros;
+    } else {
+      // Standarddiät: Kalorien und Makros berechnen
+      calories = _calculateCalories(goalType, startWeight, targetWeight);
+      macros = _calculateMacros(dietType, calories);
+    }
+
+    // Ziel in Firestore speichern
     await goalsCollection.doc('mainGoal').set({
       'goalType': goalType,
       'startWeight': startWeight,
       'targetWeight': targetWeight,
       'dietType': dietType,
+      'calories': calories,
+      'macros': macros,
       'startDate': startDate.toIso8601String(),
     });
+
+    print('Main Goal gespeichert: $goalType, $targetWeight, $dietType');
+  }
+
+// Standard Kalorienberechnung
+  int _calculateCalories(String goalType, double startWeight, double targetWeight) {
+    const maintenanceCalories = 2000; // Beispielwert
+    switch (goalType) {
+      case 'Abnehmen':
+        return maintenanceCalories - 500;
+      case 'Zunehmen':
+        return maintenanceCalories + 500;
+      case 'Gewicht halten':
+      default:
+        return maintenanceCalories;
+    }
+  }
+
+// Standard Makronährstoffberechnung
+  Map<String, int> _calculateMacros(String dietType, int calories) {
+    switch (dietType) {
+      case 'Low-Carb':
+        return {'Protein': 30, 'Carbs': 20, 'Fats': 50};
+      case 'Keto':
+        return {'Protein': 20, 'Carbs': 5, 'Fats': 75};
+      case 'High-Protein':
+        return {'Protein': 40, 'Carbs': 30, 'Fats': 30};
+      default:
+        return {'Protein': 30, 'Carbs': 40, 'Fats': 30};
+    }
   }
 
   //Speicherung der Wochenziele
@@ -30,6 +92,11 @@ class GoalService {
       double targetWeight,
       int totalWeeks,
       ) async {
+
+    if (totalWeeks <= 0 || startWeight <= 0 || targetWeight <= 0) {
+      throw ArgumentError('Ungültige Eingabewerte für Wochenziele.');
+    }
+
     final goalsCollection = _firestore.collection('users').doc(userId).collection('goals');
     final double weightStep = (startWeight - targetWeight) / totalWeeks;
 
@@ -42,6 +109,7 @@ class GoalService {
         'currentWeight': null,
         'progress': null,
       });
+      print('Woche $i Zielgewicht gespeichert: $goalWeight kg');
     }
   }
 
@@ -55,10 +123,26 @@ class GoalService {
       double goalWeight = data?['goalWeight'];
       double progress = currentWeight - goalWeight;
 
+      // Zusätzliche Logik für Feedback
+      String feedback = '';
+      if (progress > 2) {
+        feedback = 'Du bist weit über dem Zielgewicht dieser Woche.';
+      } else if (progress < -2) {
+        feedback = 'Du hast das Zielgewicht dieser Woche weit unterschritten.';
+      } else {
+        feedback = 'Du bist auf Kurs.';
+      }
+
       await weekDocRef.update({
         'currentWeight': currentWeight,
         'progress': progress,
+        'updatedAt': DateTime.now().toIso8601String(), // Zeitstempel hinzufügen
+        'feedback': feedback, // Feedback speichern
       });
+
+      print('Woche $week aktualisiert: Gewicht $currentWeight kg, Feedback: $feedback');
+    } else {
+      print('Keine Daten für Woche $week gefunden.');
     }
   }
 }

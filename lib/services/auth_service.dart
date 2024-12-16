@@ -6,50 +6,63 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<User?> registerWithEmailAndPassword(
-      String email,
-      String password,
-      String name,
-      String surname,
-      int height,
-      double weight,
-      String goal) async {
+      String email, String password, String name, String surname, int height, double weight, String goal) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      // Die uid als Dokument-ID in Firestore verwenden
+
       final uid = userCredential.user!.uid;
       await _firestore.collection('users').doc(uid).set({
         'name': name,
         'surname': surname,
         'height': height,
         'weight': weight,
-        'goal': goal
-        //profile settings habe ich leer gelassen, weil noch explizit definiert werden muss, was hier rein soll &
-        //ich nicht weiß, ob das hier überhaupt nötig ist oder es schlauer wäre das nach dem ersten Login zu machen
-        //'profil_setttings': {},
+        'goal': goal,
+        'dietType': 'Standard',
       });
+
+      // Sende Verifizierungs-E-Mail
+      await sendEmailVerification();
       return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      print('FirebaseAuthException: ${e.code}');
+      throw e;
     } catch (e) {
-      print(e);
-      return null;
+      print('Allgemeiner Fehler: $e');
+      throw e;
     }
   }
 
-  Future<User?> signInWithEmailAndPassword(
-      String email, String password) async {
+
+
+  Future<User?> signInWithEmailAndPassword(String email, String password) async {
     try {
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return userCredential.user;
+
+      final user = userCredential.user;
+
+      if (user != null && !user.emailVerified) {
+        throw FirebaseAuthException(
+          code: 'email-not-verified',
+          message: 'E-Mail-Adresse ist nicht verifiziert. Bitte überprüfen Sie Ihr Postfach.',
+        );
+      }
+
+      return user;
+    } on FirebaseAuthException catch (e) {
+      print('Login fehlgeschlagen: ${e.code}');
+      throw e;
     } catch (e) {
-      print('Login failed: $e');
-      return null;
+      print('Allgemeiner Fehler beim Login: $e');
+      throw e;
     }
   }
+
 
   Future<void> signOut() async {
     await _auth.signOut();
@@ -94,4 +107,21 @@ class AuthService {
       print('Account deletion failed: $e');
     }
   }
+
+  Future<void> sendEmailVerification() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        print('Verifizierungsmail gesendet.');
+      } else {
+        print('Benutzer ist null oder bereits verifiziert.');
+      }
+    } catch (e) {
+      print('Fehler beim Senden der Verifizierungsmail: $e');
+      throw e; // Weiterreichen des Fehlers, falls nötig
+    }
+  }
+
+
 }
