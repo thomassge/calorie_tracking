@@ -20,6 +20,7 @@ class AuthService {
         'height': height,
         'weight': weight,
         'goal': goal,
+        'dietType': 'Standard',
       });
 
       // Sende Verifizierungs-E-Mail
@@ -36,19 +37,32 @@ class AuthService {
 
 
 
-  Future<User?> signInWithEmailAndPassword(
-      String email, String password) async {
+  Future<User?> signInWithEmailAndPassword(String email, String password) async {
     try {
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return userCredential.user;
+
+      final user = userCredential.user;
+
+      if (user != null && !user.emailVerified) {
+        throw FirebaseAuthException(
+          code: 'email-not-verified',
+          message: 'E-Mail-Adresse ist nicht verifiziert. Bitte überprüfen Sie Ihr Postfach.',
+        );
+      }
+
+      return user;
+    } on FirebaseAuthException catch (e) {
+      print('Login fehlgeschlagen: ${e.code}');
+      throw e;
     } catch (e) {
-      print('Login failed: $e');
-      return null;
+      print('Allgemeiner Fehler beim Login: $e');
+      throw e;
     }
   }
+
 
   Future<void> signOut() async {
     await _auth.signOut();
