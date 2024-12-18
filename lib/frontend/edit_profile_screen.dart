@@ -1,8 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:calorie_tracking/frontend/change_password_screen.dart';
+import 'package:calorie_tracking/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/auth_service.dart';
-import 'change_password_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final dynamic user;
@@ -167,7 +166,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content:
-                            Text('Fehler beim Löschen des Accounts: $e')),
+                                Text('Fehler beim Löschen des Accounts: $e')),
                       );
                     }
                   }

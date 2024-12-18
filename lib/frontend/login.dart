@@ -1,7 +1,7 @@
+import 'package:calorie_tracking/frontend/main_screen.dart';
+import 'package:calorie_tracking/frontend/register.dart';
 import 'package:flutter/material.dart';
-import 'register.dart';
 import '../services/auth_service.dart';
-import 'main_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -43,7 +43,7 @@ class LoginScreen extends StatelessWidget {
                     if (value == null || value.isEmpty) {
                       return 'Bitte eine E-Mail eingeben.';
                     } else if (!RegExp(
-                        r"^[a-zA-Z0-9.a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+                            r"^[a-zA-Z0-9.a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
                         .hasMatch(value)) {
                       return 'Bitte eine gültige E-Mail-Adresse eingeben.';
                     }

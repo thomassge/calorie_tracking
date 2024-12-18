@@ -14,7 +14,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController oldPasswordController = TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
   final TextEditingController confirmPasswordController =
-  TextEditingController();
+      TextEditingController();
 
   bool isLoading = false;
 
@@ -45,7 +45,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     try {
       final email = widget.user.email;
       final credential =
-      EmailAuthProvider.credential(email: email, password: oldPassword);
+          EmailAuthProvider.credential(email: email, password: oldPassword);
 
       await FirebaseAuth.instance.currentUser!
           .reauthenticateWithCredential(credential);
@@ -108,9 +108,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
-              onPressed: _changePassword,
-              child: const Text('Passwort ändern'),
-            ),
+                    onPressed: _changePassword,
+                    child: const Text('Passwort ändern'),
+                  ),
           ],
         ),
       ),

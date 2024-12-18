@@ -1,71 +1,175 @@
 import 'package:flutter/material.dart';
-//import 'package:inf_proj_flutter/Frontend/edit_profile_screen.dart';
-//import 'package:inf_proj_flutter/Frontend/login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/auth_service.dart';
 import 'edit_profile_screen.dart';
 import 'login.dart';
 
-class MainScreen extends StatelessWidget {
-  final AuthService authService = AuthService();
-  MainScreen({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  // Dummy-Daten für Kalorien und Makronährstoffe
+  final int totalKcal = 1800;
+  final int consumedProtein = 80; // in Gramm
+  final int consumedCarbs = 150; // in Gramm
+  final int consumedFats = 40; // in Gramm
+
+  double get proteinProgress => consumedProtein / 120; // Beispielziel: 120 g
+  double get carbsProgress => consumedCarbs / 200; // Beispielziel: 200 g
+  double get fatsProgress => consumedFats / 60; // Beispielziel: 60 g
+
+  void _openDrawer() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profil bearbeiten'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditProfileScreen(
+                        user: FirebaseAuth.instance.currentUser),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Abmelden'),
+              onTap: () async {
+                Navigator.pop(context);
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-        );
-      });
-      return const SizedBox();
-    }
     return Scaffold(
       appBar: AppBar(
-        title: Text('Hauptbildschirm'),
+        title: const Text('Hauptbildschirm'),
         backgroundColor: Colors.blueAccent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: _openDrawer,
+          ),
+        ],
       ),
-      body: Row(
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(
-                child: Text(
-                  'Hier werden die Hauptdaten angezeigt',
-                  style: TextStyle(fontSize: 24),
+          Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CircularProgressIndicator(
+                    value: 1.0,
+                    strokeWidth: 10.0,
+                    backgroundColor: Colors.grey[300],
+                  ),
                 ),
-              ),
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CircularProgressIndicator(
+                    value: proteinProgress,
+                    strokeWidth: 10.0,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                ),
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CircularProgressIndicator(
+                    value: carbsProgress,
+                    strokeWidth: 10.0,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.green),
+                  ),
+                ),
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CircularProgressIndicator(
+                    value: fatsProgress,
+                    strokeWidth: 10.0,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.blue),
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${totalKcal} kcal',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          Container(
-            width: 250,
-            color: Colors.grey[200],
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => EditProfileScreen(user: user)),
-                    );
-                  },
-                  child: Text('Profil bearbeiten'),
+                Row(
+                  children: [
+                    const Icon(Icons.circle, color: Colors.red, size: 10),
+                    const SizedBox(width: 8),
+                    Text('Protein: $consumedProtein g',
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.red)),
+                  ],
                 ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () async {
-                    await authService.signOut();
-                    Navigator.pushReplacement(context,
-                        MaterialPageRoute(builder: (context) => LoginScreen()));
-                  },
-                  child: Text('Abmelden'),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.circle, color: Colors.green, size: 10),
+                    const SizedBox(width: 8),
+                    Text('Kohlenhydrate: $consumedCarbs g',
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.green)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.circle, color: Colors.blue, size: 10),
+                    const SizedBox(width: 8),
+                    Text('Fette: $consumedFats g',
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.blue)),
+                  ],
                 ),
               ],
             ),
