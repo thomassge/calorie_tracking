@@ -87,6 +87,8 @@ class AuthService {
     }
   }
 
+  /*
+
   //darf nur implementiert werden, wenn der Nutzer eingeloggt ist
   Future<void> changeEmail(String newEmail) async {
     try {
@@ -94,6 +96,28 @@ class AuthService {
       print('Email changed successfully');
     } catch (e) {
       print('Email change failed: $e');
+    }
+  }
+
+   */
+
+
+  //ersetzt die changeEmail methode, indem es eine Verifizierungsmail an die neue Email sendet
+  Future<void> updateEmailWithVerification(String newEmail) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        throw Exception('No user is signed in');
+      }
+
+      // Send verification email to the new email address
+      await user.verifyBeforeUpdateEmail(newEmail);
+
+      print('Verification email sent to $newEmail. The email will be updated upon verification.');
+    } catch (e) {
+      print('Error in updating email: $e');
+      throw e;
     }
   }
 
